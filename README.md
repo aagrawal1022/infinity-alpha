@@ -23,3 +23,16 @@ Clean separation of:
 - Data
 - Reasoning
 - Presentation
+
+
+# Start serer
+
+1. python -m venv .venv
+2. source .venv/bin/activate //macOS / Linux
+    .venv\Scripts\Activate.ps1  /Widnpws
+3. python mcp_server/server.py
+
+
+// Prompts:
+
+1. Analyze Cgar of NIFTY 50 (^NSEI), my invested if i would have invested 10000 Rs whenever this is fall of 1% or more for period for jan 25 to dec 25
