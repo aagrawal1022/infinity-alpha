@@ -21,7 +21,19 @@ async def run_agent(user_query: str):
 User query:
 {user_query}
 
-If stock data is required, respond ONLY in JSON like:
+Determine which tool to use. Respond ONLY in JSON:
+
+For dip investment strategy analysis:
+{{
+  "tool": "dip_investment_cagr",
+  "symbol": "SYMBOL_HERE",
+  "start": "YYYY-MM-DD",
+  "end": "YYYY-MM-DD",
+  "dip_percent": 1.0,
+  "investment_amount": 10000.0
+}}
+
+For general stock history:
 {{
   "tool": "get_stock_history",
   "symbol": "SYMBOL_HERE",
@@ -29,7 +41,7 @@ If stock data is required, respond ONLY in JSON like:
   "end": "YYYY-MM-DD"
 }}
 
-Otherwise respond with:
+Or if no tool needed:
 {{ "tool": null }}
 """
 
@@ -51,7 +63,38 @@ Otherwise respond with:
         return plan  # Gemini answered directly
 
     # Step 2: Call MCP tool if needed
-    if plan_json.get("tool") == "get_stock_history":
+    if plan_json.get("tool") == "dip_investment_cagr":
+        print(f"[LOG] Step 2: Calling MCP tool 'dip_investment_cagr' with params: {plan_json}")
+        result = await mcp.call_tool(
+            "dip_investment_cagr",
+            {
+                "symbol": plan_json["symbol"],
+                "start": plan_json["start"],
+                "end": plan_json["end"],
+                "dip_percent": plan_json.get("dip_percent", 1.0),
+                "investment_amount": plan_json.get("investment_amount", 10000.0),
+            }
+        )
+        print(f"[LOG] CAGR calculation complete")
+        
+        # Step 3: Send result to Gemini for better rephrasing
+        print("[LOG] Step 3: Sending CAGR result to Gemini for analysis...")
+        analysis_prompt = f"""
+{SYSTEM_PROMPT}
+
+User question:
+{user_query}
+
+Here is the dip investment CAGR analysis result:
+{result}
+
+Provide a detailed and well-formatted explanation of these results, including insights about the investment strategy performance, CAGR, and recommendations.
+"""
+        result = model.models.generate_content(model=MODEL, contents=analysis_prompt).text
+        print("[LOG] Analysis complete, returning result")
+        return result
+
+    elif plan_json.get("tool") == "get_stock_history":
         print(f"[LOG] Step 2: Calling MCP tool 'get_stock_history' with params: {plan_json}")
         data = await mcp.call_tool(
             "get_stock_history",

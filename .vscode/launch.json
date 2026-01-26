@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Agent",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/agent/agent.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+                {
+            "name": "MCP Server 1",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/mcp_server/server.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}
