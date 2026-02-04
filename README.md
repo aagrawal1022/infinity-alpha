@@ -1,4 +1,4 @@
-# Quant AI Lab
+# Infinity Alpha
 
 An AI-powered stock market analysis platform using:
 
@@ -44,6 +44,8 @@ Clean separation of:
 // Prompts:
 
 1. Analyze Cgar of NIFTY 50 (^NSEI), my invested if i would have invested 10000 Rs whenever this is fall of 0.5% or more for period for 04/07/2022 to 31/12/2025
+2. Analyze Xiir of NIFTY 50 (^NSEI), my invested if i would have invested 10000 Rs whenever this is fall of 1.5% or more for period for 04/07/2022 to 31/12/2025
+3. Analyze rolling return of NIFTY 50 (^NSEI), my invested if i would have invested 10000 Rs whenever this is fall of 0.5% or more for period for 04/07/2022 to 31/12/2025
 
 Response: 
 
