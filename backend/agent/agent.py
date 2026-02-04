@@ -33,6 +33,28 @@ For dip investment strategy analysis:
   "investment_amount": 10000.0
 }}
 
+        For dip investment rolling returns:
+        {{
+            "tool": "dip_investment_rolling_returns",
+            "symbol": "SYMBOL_HERE",
+            "start": "YYYY-MM-DD",
+            "end": "YYYY-MM-DD",
+            "dip_percent": 1.0,
+            "investment_amount": 10000.0,
+            "window_days": 252
+        }}
+
+        For dip investment XIRR analysis:
+        {{
+            "tool": "dip_investment_xirr",
+            "symbol": "SYMBOL_HERE",
+            "start": "YYYY-MM-DD",
+            "end": "YYYY-MM-DD",
+            "dip_percent": 1.0,
+            "investment_amount": 10000.0,
+            "annualize_periods": 252
+        }}
+
 For general stock history:
 {{
   "tool": "get_stock_history",
@@ -90,6 +112,68 @@ Here is the dip investment CAGR analysis result:
 
 Provide a detailed and well-formatted explanation of these results, including insights about the investment strategy performance, CAGR, and recommendations.
 """
+        result = model.models.generate_content(model=MODEL, contents=analysis_prompt).text
+        print("[LOG] Analysis complete, returning result")
+        return result
+
+    elif plan_json.get("tool") == "dip_investment_rolling_returns":
+        print(f"[LOG] Step 2: Calling MCP tool 'dip_investment_rolling_returns' with params: {plan_json}")
+        result = await mcp.call_tool(
+                "dip_investment_rolling_returns",
+                {
+                    "symbol": plan_json["symbol"],
+                    "start": plan_json["start"],
+                    "end": plan_json["end"],
+                    "dip_percent": plan_json.get("dip_percent", 1.0),
+                    "investment_amount": plan_json.get("investment_amount", 10000.0),
+                    "window_days": plan_json.get("window_days", 252),
+                }
+            )
+        print(f"[LOG] Rolling returns calculation complete")
+
+        print("[LOG] Step 3: Sending rolling-returns result to Gemini for analysis...")
+        analysis_prompt = f"""
+    {SYSTEM_PROMPT}
+
+    User question:
+    {user_query}
+
+    Here is the dip investment rolling-returns analysis result:
+    {result}
+
+    Provide a detailed and well-formatted explanation of these results, including insights and recommendations.
+    """
+        result = model.models.generate_content(model=MODEL, contents=analysis_prompt).text
+        print("[LOG] Analysis complete, returning result")
+        return result
+
+    elif plan_json.get("tool") == "dip_investment_xirr":
+        print(f"[LOG] Step 2: Calling MCP tool 'dip_investment_xirr' with params: {plan_json}")
+        result = await mcp.call_tool(
+                "dip_investment_xirr",
+                {
+                    "symbol": plan_json["symbol"],
+                    "start": plan_json["start"],
+                    "end": plan_json["end"],
+                    "dip_percent": plan_json.get("dip_percent", 1.0),
+                    "investment_amount": plan_json.get("investment_amount", 10000.0),
+                    "annualize_periods": plan_json.get("annualize_periods", 252),
+                }
+            )
+        print(f"[LOG] XIRR calculation complete")
+
+        print("[LOG] Step 3: Sending XIRR result to Gemini for analysis...")
+        analysis_prompt = f"""
+    {SYSTEM_PROMPT}
+
+    User question:
+    {user_query}
+
+    Here is the dip investment XIRR analysis result:
+    {result}
+
+    Provide a detailed and well-formatted explanation of these results, including insights and recommendations.
+    """
         result = model.models.generate_content(model=MODEL, contents=analysis_prompt).text
         print("[LOG] Analysis complete, returning result")
         return result
