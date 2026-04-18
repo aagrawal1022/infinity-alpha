@@ -1,0 +1,151 @@
+package com.infalpha.provider.gemini;
+
+import com.google.genai.Client;
+import com.google.genai.types.*;
+import com.infalpha.model.*;
+import com.infalpha.provider.LlmProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * PAID provider — Uses the official Google GenAI Java SDK.
+ * Supports: gemini-1.5-pro, gemini-1.5-flash, gemini-ultra, etc.
+ */
+@Component
+@ProviderInfo(
+        key = "gemini",
+        displayName = "Google Gemini",
+        tier = ProviderTier.PAID,
+        modelPrefixes = {"gemini-1.5-pro", "gemini-ultra", "gemini-1.0"}
+)
+public class GeminiSdkProvider implements LlmProvider {
+
+    private static final Logger log = LoggerFactory.getLogger(GeminiSdkProvider.class);
+
+    private Client client;
+    private ModelConfig config;
+    private boolean ready = false;
+
+    @Override
+    public void initialize(ModelConfig config) {
+        this.config = config;
+        if (config.getApiKey() != null && !config.getApiKey().isBlank()) {
+            this.client = Client.builder()
+                    .apiKey(config.getApiKey())
+                    .build();
+            this.ready = true;
+            log.info("[gemini] SDK initialized");
+        } else {
+            log.warn("[gemini] No API key provided, provider will not be ready");
+        }
+    }
+
+    @Override
+    public boolean isReady() { return ready; }
+
+    @Override
+    public ChatResponse chat(ChatRequest request) {
+        long start = System.currentTimeMillis();
+
+        List<Content> contents = new ArrayList<>();
+        Optional<String> systemInstruction = Optional.empty();
+
+        for (Message msg : request.getMessages()) {
+            if ("system".equals(msg.getRole())) {
+                systemInstruction = Optional.of(msg.getContent());
+            } else {
+                String role = "assistant".equals(msg.getRole()) ? "model" : "user";
+                contents.add(Content.builder()
+                        .role(role)
+                        .parts(List.of(Part.builder().text(msg.getContent()).build()))
+                        .build());
+            }
+        }
+
+        GenerateContentConfig.Builder configBuilder = GenerateContentConfig.builder()
+                .temperature(request.getTemperature().floatValue())
+                .maxOutputTokens(request.getMaxTokens())
+                .topP(request.getTopP().floatValue());
+
+        systemInstruction.ifPresent(s ->
+                configBuilder.systemInstruction(Content.builder()
+                        .parts(List.of(Part.builder().text(s).build()))
+                        .build()));
+
+        GenerateContentResponse response = client.models.generateContent(
+                request.getModel(), contents, configBuilder.build());
+
+        long latency = System.currentTimeMillis() - start;
+
+        String text = response.text() != null ? response.text() : "";
+
+        Usage usage = extractUsage(response);
+
+        return ChatResponse.builder()
+                .model(request.getModel())
+                .provider("gemini")
+                .tier(ProviderTier.PAID)
+                .content(text)
+                .usage(usage)
+                .latencyMs(latency)
+                .build();
+    }
+
+    @Override
+    public Flux<String> streamChat(ChatRequest request) {
+        return Flux.create(sink -> {
+            try {
+                List<Content> contents = new ArrayList<>();
+                for (Message msg : request.getMessages()) {
+                    if (!"system".equals(msg.getRole())) {
+                        String role = "assistant".equals(msg.getRole()) ? "model" : "user";
+                        contents.add(Content.builder()
+                                .role(role)
+                                .parts(List.of(Part.builder().text(msg.getContent()).build()))
+                                .build());
+                    }
+                }
+
+                GenerateContentConfig streamConfig = GenerateContentConfig.builder()
+                        .temperature(request.getTemperature().floatValue())
+                        .maxOutputTokens(request.getMaxTokens())
+                        .topP(request.getTopP().floatValue())
+                        .build();
+
+                client.models.generateContentStream(request.getModel(), contents, streamConfig)
+                        .forEach(chunk -> {
+                            if (chunk.text() != null) {
+                                sink.next(chunk.text());
+                            }
+                        });
+                sink.complete();
+            } catch (Exception e) {
+                sink.error(e);
+            }
+        });
+    }
+
+    private Usage extractUsage(GenerateContentResponse response) {
+        var metadataOpt = response.usageMetadata();
+        if (metadataOpt == null || metadataOpt.isEmpty()) return null;
+        try {
+            var um = metadataOpt.get();
+            int prompt = um.promptTokenCount().orElse(0);
+            int completion = um.candidatesTokenCount().orElse(0);
+            return Usage.builder()
+                    .promptTokens(prompt)
+                    .completionTokens(completion)
+                    .totalTokens(prompt + completion)
+                    .build();
+        } catch (Exception e) {
+            log.debug("Could not extract usage metadata: {}", e.getMessage());
+            return null;
+        }
+    }
+}

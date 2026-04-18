@@ -1,0 +1,95 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: inf-alpha
+  jackson:
+    property-naming-strategy: LOWER_CAMEL_CASE
+    default-property-inclusion: non_null
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LLM Provider Configuration
+# ═══════════════════════════════════════════════════════════════════════════════
+inf-alpha:
+  providers:
+
+    # ─── PAID TIER (requires billing accounts) ─────────────────────────────────
+    openai:
+      enabled: true
+      tier: PAID
+      api-key: ${OPENAI_API_KEY:}
+      default-model: gpt-4o
+      timeout-seconds: 30
+
+    claude:
+      enabled: true
+      tier: PAID
+      api-key: ${ANTHROPIC_API_KEY:}
+      default-model: claude-sonnet-4-20250514
+      timeout-seconds: 60
+
+    gemini:
+      enabled: true
+      tier: PAID
+      api-key: ${GEMINI_API_KEY:}
+      default-model: gemini-1.5-pro
+      timeout-seconds: 30
+
+    # ─── FREE TIER (no billing required) ───────────────────────────────────────
+    github-models:
+      enabled: true
+      tier: FREE
+      api-key: ${GITHUB_TOKEN:}
+      base-url: https://models.inference.ai.azure.com
+      default-model: gpt-4o-mini
+      timeout-seconds: 30
+
+    groq:
+      enabled: true
+      tier: FREE
+      api-key: ${GROQ_API_KEY:}
+      base-url: https://api.groq.com/openai/v1
+      default-model: llama-3.3-70b-versatile
+      timeout-seconds: 30
+
+    gemini-free:
+      enabled: true
+      tier: FREE
+      api-key: ${GEMINI_API_KEY:}
+      default-model: gemini-2.0-flash
+      timeout-seconds: 30
+
+    huggingface:
+      enabled: true
+      tier: FREE
+      api-key: ${HF_TOKEN:}
+      base-url: https://api-inference.huggingface.co
+      default-model: mistralai/Mistral-7B-Instruct-v0.3
+      timeout-seconds: 60
+
+    ollama:
+      enabled: true
+      tier: FREE
+      api-key: ""
+      base-url: http://localhost:11434
+      default-model: llama3
+      timeout-seconds: 120
+
+  retry:
+    max-attempts: 3
+    backoff-ms: 1000
+
+# ─── Actuator ──────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.infalpha: DEBUG

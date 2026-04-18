@@ -1,20 +1,43 @@
-# Python
-__pycache__/
-*.pyc
-.venv/
-venv/
+# Global
+.DS_Store
+Thumbs.db
+.env
+*.env
 
-# Node / Frontend
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+*.swp
+*.swo
+*.log
+
+# Backend (Java/Maven)
+target/
+backend/target/
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/maven/
+
+# Frontend (Node/React/Next.js)
 node_modules/
 dist/
+dist-ssr/
+out/
+build/
+.next/
+.nuxt/
+coverage/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Env
-.env
-
-# OS
-.DS_Store
-
-# Data
-data/
-*.parquet
-*.csv
+# Infra (Terraform)
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform.tfstate.lock.info

@@ -1,5 +1,0 @@
-mcp
-yfinance
-pandas
-fastmcp
-openai
